@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jawaker Wi-Fi QR Generator</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 30px 15px;
+  font-family: Arial, sans-serif;
+  background: #f2f5fa;
+  color: #172b4d;
+}
+
+.container {
+  max-width: 480px;
+  margin: 30px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 5px 25px rgba(0,0,0,.08);
+}
+
+h1 { text-align: center; font-size: 25px; }
+.subtitle {
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 28px;
+}
+
+label {
+  display: block;
+  margin: 17px 0 7px;
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #ccd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 8px;
+  background: #172b4d;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover { background: #294b79; }
+
+#result {
+  display: none;
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+#qrcode {
+  display: flex;
+  justify-content: center;
+  margin: 20px auto;
+}
+
+#qrcode img, #qrcode canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.note {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.6;
+  margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>JAWAKER</h1>
+<p class="subtitle">Wi-Fi QR Code Generator</p>
+
+<label for="ssid">Wi-Fi Network Name</label>
+<input id="ssid" type="text" placeholder="Enter Wi-Fi name"
+autocomplete="off">
+
+<label for="password">Wi-Fi Password</label>
+<input id="password" type="password" placeholder="Enter Wi-Fi password"
+autocomplete="off">
+
+<label for="security">Security Type</label>
+<select id="security">
+  <option value="WPA">WPA / WPA2 / WPA3</option>
+  <option value="WEP">WEP</option>
+  <option value="nopass">No Password</option>
+</select>
+
+<button onclick="generateQR()">Generate QR Code</button>
+
+<div id="result">
+  <h3>Your Wi-Fi QR Code</h3>
+  <div id="qrcode"></div>
+  <p>Scan to connect to Wi-Fi</p>
+  <button onclick="downloadQR()">Download QR Code</button>
+</div>
+
+<p class="note">
+Your Wi-Fi details are processed in your browser.
+They are not submitted to GitHub or a server by this page.
+Avoid using this tool on shared or untrusted computers.
+</p>
+
+</div>
+
+<script>
+function escapeWifi(value) {
+  return value.replace(/([\\;,:"])/g, "\\$1");
+}
+
+function generateQR() {
+  const ssid = document.getElementById("ssid").value;
+  const password = document.getElementById("password").value;
+  const security = document.getElementById("security").value;
+
+  if (!ssid.trim()) {
+    alert("Please enter your Wi-Fi network name.");
+    return;
+  }
+
+  if (security !== "nopass" && !password) {
+    alert("Please enter your Wi-Fi password.");
+    return;
+  }
+
+  if (typeof QRCode === "undefined") {
+    alert("QR library did not load. Check your internet connection.");
+    return;
+  }
+
+  const wifiString =
+    "WIFI:T:" + security +
+    ";S:" + escapeWifi(ssid) +
+    ";P:" + escapeWifi(password) +
+    ";;";
+
+  const qrArea = document.getElementById("qrcode");
+  qrArea.innerHTML = "";
+
+  new QRCode(qrArea, {
+    text: wifiString,
+    width: 250,
+    height: 250,
+    colorDark: "#172b4d",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById("result").style.display = "block";
+}
+
+function downloadQR() {
+  const qrArea = document.getElementById("qrcode");
+  const canvas = qrArea.querySelector("canvas");
+  const img = qrArea.querySelector("img");
+
+  let imageURL;
+
+  if (canvas) {
+    imageURL = canvas.toDataURL("image/png");
+  } else if (img) {
+    imageURL = img.src;
+  } else {
+    alert("Please generate a QR code first.");
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = imageURL;
+  link.download = "Jawaker-WiFi-QR.png";
+  link.click();
+}
+</script>
+</body>
+</html>
