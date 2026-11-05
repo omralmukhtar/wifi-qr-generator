@@ -167,8 +167,8 @@ function generateQR() {
 
   new QRCode(qrArea, {
     text: wifiString,
-    width: 250,
-    height: 250,
+    width: 400,
+    height: 400,
     colorDark: "#172b4d",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
@@ -177,26 +177,53 @@ function generateQR() {
   document.getElementById("result").style.display = "block";
 }
 
+
 function downloadQR() {
   const qrArea = document.getElementById("qrcode");
-  const canvas = qrArea.querySelector("canvas");
-  const img = qrArea.querySelector("img");
+  const qrCanvas = qrArea.querySelector("canvas");
 
-  let imageURL;
-
-  if (canvas) {
-    imageURL = canvas.toDataURL("image/png");
-  } else if (img) {
-    imageURL = img.src;
-  } else {
+  if (!qrCanvas) {
     alert("Please generate a QR code first.");
     return;
   }
 
+  const output = document.createElement("canvas");
+  output.width = 600;
+  output.height = 690;
+
+  const ctx = output.getContext("2d");
+
+  // White background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 600, 690);
+
+  // Corporate heading
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#172b4d";
+  ctx.font = "bold 42px Arial";
+  ctx.fillText("JAWAKER", 300, 75);
+
+  ctx.font = "bold 23px Arial";
+  ctx.fillText("GUEST WI-FI", 300, 120);
+
+  // QR code with white space around it
+  ctx.drawImage(qrCanvas, 100, 165, 400, 400);
+
+  // Footer
+  ctx.fillStyle = "#172b4d";
+  ctx.font = "bold 21px Arial";
+  ctx.fillText("SCAN TO CONNECT", 300, 615);
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "16px Arial";
+  ctx.fillText("Thank you for visiting!", 300, 650);
+
   const link = document.createElement("a");
-  link.href = imageURL;
-  link.download = "Jawaker-WiFi-QR.png";
+  link.href = output.toDataURL("image/png");
+  link.download = "Jawaker-Guest-WiFi.png";
   link.click();
+}
+
 }
 </script>
 </body>
