@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jawaker Wi-Fi QR Generator</title>
 
-<script src="qrcode.min.js"></script>
+<script src="qr-code-styling.js"></script>
 
 <style>
 * { box-sizing: border-box; }
@@ -136,93 +136,81 @@ function escapeWifi(value) {
   return value.replace(/([\\;,:"])/g, "\\$1");
 }
 
+
+let styledQR = null;
+
+function escapeWifi(value) {
+  return value.replace(/([\\;,:"])/g, "\\$1");
+}
+
 function generateQR() {
   const ssid = document.getElementById("ssid").value;
   const password = document.getElementById("password").value;
   const security = document.getElementById("security").value;
 
   if (!ssid.trim()) {
-    alert("Please enter your Wi-Fi network name.");
+    alert("Please enter Wi-Fi name.");
     return;
   }
 
   if (security !== "nopass" && !password) {
-    alert("Please enter your Wi-Fi password.");
+    alert("Please enter Wi-Fi password.");
     return;
   }
 
-  if (typeof QRCode === "undefined") {
-    alert("QR library did not load. Check your internet connection.");
+  if (typeof QRCodeStyling === "undefined") {
+    alert("QR styling library not loaded. Refresh and try again.");
     return;
   }
 
-  const wifiString =
-    "WIFI:T:" + security +
-    ";S:" + escapeWifi(ssid) +
-    ";P:" + escapeWifi(password) +
-    ";;";
+  const wifiData = security === "nopass"
+    ? `WIFI:T:nopass;S:${escapeWifi(ssid)};;`
+    : `WIFI:T:${security};S:${escapeWifi(ssid)};P:${escapeWifi(password)};;`;
 
-  const qrArea = document.getElementById("qrcode");
-  qrArea.innerHTML = "";
+  document.getElementById("qrcode").innerHTML = "";
 
-  new QRCode(qrArea, {
-    text: wifiString,
-    width: 400,
-    height: 400,
-    colorDark: "#172b4d",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
+  styledQR = new QRCodeStyling({
+    width: 500,
+    height: 500,
+    type: "canvas",
+    data: wifiData,
+    margin: 20,
+    qrOptions: {
+      errorCorrectionLevel: "H"
+    },
+    dotsOptions: {
+      color: "#172B4D",
+      type: "rounded"
+    },
+    cornersSquareOptions: {
+      color: "#172B4D",
+      type: "square"
+    },
+    cornersDotOptions: {
+      color: "#172B4D",
+      type: "dot"
+    },
+    backgroundOptions: {
+      color: "#FFFFFF"
+    }
   });
 
+  styledQR.append(document.getElementById("qrcode"));
   document.getElementById("result").style.display = "block";
 }
 
-
 function downloadQR() {
-  const qrArea = document.getElementById("qrcode");
-  const qrCanvas = qrArea.querySelector("canvas");
-
-  if (!qrCanvas) {
-    alert("Please generate a QR code first.");
+  if (!styledQR) {
+    alert("Generate a QR code first.");
     return;
   }
 
-  const output = document.createElement("canvas");
-  output.width = 600;
-  output.height = 690;
-
-  const ctx = output.getContext("2d");
-
-  // White background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, 600, 690);
-
-  // Corporate heading
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#172b4d";
-  ctx.font = "bold 42px Arial";
-  ctx.fillText("JAWAKER", 300, 75);
-
-  ctx.font = "bold 23px Arial";
-  ctx.fillText("GUEST WI-FI", 300, 120);
-
-  // QR code with white space around it
-  ctx.drawImage(qrCanvas, 100, 165, 400, 400);
-
-  // Footer
-  ctx.fillStyle = "#172b4d";
-  ctx.font = "bold 21px Arial";
-  ctx.fillText("SCAN TO CONNECT", 300, 615);
-
-  ctx.fillStyle = "#64748b";
-  ctx.font = "16px Arial";
-  ctx.fillText("Thank you for visiting!", 300, 650);
-
-  const link = document.createElement("a");
-  link.href = output.toDataURL("image/png");
-  link.download = "Jawaker-Guest-WiFi.png";
-  link.click();
+  styledQR.download({
+    name: "Jawaker-Corporate-WiFi",
+    extension: "png"
+  });
 }
+
 
 }
 </script>
