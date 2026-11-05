@@ -4,12 +4,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Jawaker Wi-Fi QR Generator</title>
 
-<script src="qr-code-styling.js"></script>
+<script src="./qr-code-styling.js" defer></script>
 
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -23,12 +26,18 @@ body {
   max-width: 480px;
   margin: 30px auto;
   padding: 30px;
-  background: white;
+  background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 5px 25px rgba(0,0,0,.08);
 }
 
-h1 { text-align: center; font-size: 25px; }
+h1 {
+  text-align: center;
+  font-size: 27px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
 .subtitle {
   text-align: center;
   color: #64748b;
@@ -47,6 +56,12 @@ input, select {
   border: 1px solid #ccd5e1;
   border-radius: 8px;
   font-size: 15px;
+  background: white;
+}
+
+input:focus, select:focus {
+  outline: 2px solid #8da6cc;
+  border-color: #172b4d;
 }
 
 button {
@@ -62,7 +77,14 @@ button {
   cursor: pointer;
 }
 
-button:hover { background: #294b79; }
+button:hover {
+  background: #294b79;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
 
 #result {
   display: none;
@@ -75,10 +97,13 @@ button:hover { background: #294b79; }
 #qrcode {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin: 20px auto;
+  min-height: 0;
 }
 
-#qrcode img, #qrcode canvas {
+#qrcode canvas,
+#qrcode img {
   max-width: 100%;
   height: auto;
 }
@@ -90,127 +115,234 @@ button:hover { background: #294b79; }
   line-height: 1.6;
   margin-top: 20px;
 }
+
+#status {
+  font-size: 13px;
+  text-align: center;
+  color: #64748b;
+  margin-top: 12px;
+}
+
 </style>
 </head>
 
 <body>
+
 <div class="container">
 
 <h1>JAWAKER</h1>
-<p class="subtitle">Wi-Fi QR Code Generator</p>
+
+<p class="subtitle">Corporate Wi-Fi QR Generator</p>
 
 <label for="ssid">Wi-Fi Network Name</label>
-<input id="ssid" type="text" placeholder="Enter Wi-Fi name"
-autocomplete="off">
+
+<input
+  id="ssid"
+  type="text"
+  placeholder="Enter Wi-Fi name"
+  autocomplete="off"
+>
 
 <label for="password">Wi-Fi Password</label>
-<input id="password" type="password" placeholder="Enter Wi-Fi password"
-autocomplete="off">
+
+<input
+  id="password"
+  type="password"
+  placeholder="Enter Wi-Fi password"
+  autocomplete="off"
+>
 
 <label for="security">Security Type</label>
+
 <select id="security">
   <option value="WPA">WPA / WPA2 / WPA3</option>
   <option value="WEP">WEP</option>
   <option value="nopass">No Password</option>
 </select>
 
-<button onclick="generateQR()">Generate QR Code</button>
+<button id="generateButton" type="button">
+  Generate QR Code
+</button>
+
+<div id="status"></div>
 
 <div id="result">
+
   <h3>Your Wi-Fi QR Code</h3>
+
   <div id="qrcode"></div>
+
   <p>Scan to connect to Wi-Fi</p>
-  <button onclick="downloadQR()">Download QR Code</button>
+
+  <button id="downloadButton" type="button">
+    Download QR Code
+  </button>
+
 </div>
 
 <p class="note">
-Your Wi-Fi details are processed in your browser.
-They are not submitted to GitHub or a server by this page.
-Avoid using this tool on shared or untrusted computers.
+Your Wi-Fi credentials are processed locally in your browser.
+They are not submitted to GitHub or an external server by this page.
+Use this tool only on a trusted device.
 </p>
 
 </div>
 
 <script>
-function escapeWifi(value) {
-  return value.replace(/([\\;,:"])/g, "\\$1");
-}
-
 
 let styledQR = null;
 
+// Escape special characters in Wi-Fi credentials
 function escapeWifi(value) {
   return value.replace(/([\\;,:"])/g, "\\$1");
 }
 
+// Generate QR Code
 function generateQR() {
+
   const ssid = document.getElementById("ssid").value;
   const password = document.getElementById("password").value;
   const security = document.getElementById("security").value;
 
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+  const qrArea = document.getElementById("qrcode");
+
+  status.textContent = "";
+
   if (!ssid.trim()) {
-    alert("Please enter Wi-Fi name.");
+    alert("Please enter your Wi-Fi network name.");
     return;
   }
 
   if (security !== "nopass" && !password) {
-    alert("Please enter Wi-Fi password.");
+    alert("Please enter your Wi-Fi password.");
     return;
   }
 
+  // Check whether the QR library loaded
   if (typeof QRCodeStyling === "undefined") {
-    alert("QR styling library not loaded. Refresh and try again.");
+    status.textContent =
+      "QR library not loaded. Please check the library file.";
     return;
   }
 
-  const wifiData = security === "nopass"
-    ? `WIFI:T:nopass;S:${escapeWifi(ssid)};;`
-    : `WIFI:T:${security};S:${escapeWifi(ssid)};P:${escapeWifi(password)};;`;
+  // Build Wi-Fi connection data
+  let wifiData;
 
-  document.getElementById("qrcode").innerHTML = "";
+  if (security === "nopass") {
 
-  styledQR = new QRCodeStyling({
-    width: 500,
-    height: 500,
-    type: "canvas",
-    data: wifiData,
-    margin: 20,
-    qrOptions: {
-      errorCorrectionLevel: "H"
-    },
-    dotsOptions: {
-      color: "#172B4D",
-      type: "rounded"
-    },
-    cornersSquareOptions: {
-      color: "#172B4D",
-      type: "square"
-    },
-    cornersDotOptions: {
-      color: "#172B4D",
-      type: "dot"
-    },
-    backgroundOptions: {
-      color: "#FFFFFF"
-    }
-  });
+    wifiData =
+      "WIFI:T:nopass;S:" +
+      escapeWifi(ssid) +
+      ";;";
 
-  styledQR.append(document.getElementById("qrcode"));
-  document.getElementById("result").style.display = "block";
+  } else {
+
+    wifiData =
+      "WIFI:T:" + security +
+      ";S:" + escapeWifi(ssid) +
+      ";P:" + escapeWifi(password) +
+      ";;";
+
+  }
+
+  try {
+
+    // Clear previous QR code
+    qrArea.innerHTML = "";
+    styledQR = null;
+
+    // Create premium navy QR code
+    styledQR = new QRCodeStyling({
+
+      width: 500,
+      height: 500,
+
+      type: "canvas",
+
+      data: wifiData,
+
+      margin: 20,
+
+      qrOptions: {
+        errorCorrectionLevel: "H"
+      },
+
+      dotsOptions: {
+        color: "#172B4D",
+        type: "rounded"
+      },
+
+      cornersSquareOptions: {
+        color: "#172B4D",
+        type: "square"
+      },
+
+      cornersDotOptions: {
+        color: "#172B4D",
+        type: "dot"
+      },
+
+      backgroundOptions: {
+        color: "#FFFFFF"
+      }
+
+    });
+
+    // Display QR code
+    styledQR.append(qrArea);
+
+    result.style.display = "block";
+
+    status.textContent = "QR code generated successfully!";
+
+  } catch (error) {
+
+    console.error("QR Generation Error:", error);
+
+    status.textContent =
+      "Something went wrong. Check the browser console.";
+
+    styledQR = null;
+
+  }
+
 }
 
+// Download QR Code
 function downloadQR() {
+
   if (!styledQR) {
-    alert("Generate a QR code first.");
+    alert("Please generate a QR code first.");
     return;
   }
 
-  styledQR.download({
-    name: "Jawaker-Corporate-WiFi",
-    extension: "png"
-  });
+  try {
+
+    styledQR.download({
+      name: "Jawaker-Corporate-WiFi",
+      extension: "png"
+    });
+
+  } catch (error) {
+
+    console.error("Download Error:", error);
+
+    alert("Unable to download QR code. Please try again.");
+
+  }
 
 }
+
+// Connect buttons
+document.getElementById("generateButton")
+  .addEventListener("click", generateQR);
+
+document.getElementById("downloadButton")
+  .addEventListener("click", downloadQR);
+
 </script>
+
 </body>
 </html>
